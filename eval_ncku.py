@@ -14,9 +14,6 @@ import librosa
 DATA_ROOT = '/data1/pipeline_dataset/audio'
 
 
-# In[2]:
-
-
 # Load your model  
 # e.g. model = load_model()...
 
@@ -26,9 +23,7 @@ sample_rate = 16000     # Cubo device's defult sample rate
 cry_limit_sec = 3
 
 # detail Setting
-win_size_sec = 0.3      # detect window length
 sensitivity = 20        # Will detect segment with avg_dB
-hit_rate = 0.55  # Cry ratio in segment
 segment_cry_threshold = 2  # Threshold for segment cry windows numbers
 
 # Global statistic calculation
@@ -37,9 +32,6 @@ cry_total_detections = 0
 cry_total_hit_in_cry = 0
 other_total_detections = 0
 cry_total_hit_in_other = 0
-
-
-# In[3]:
 
 
 # other: return 0, cry return 1
