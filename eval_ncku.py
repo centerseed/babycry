@@ -14,6 +14,9 @@ import librosa
 DATA_ROOT = '/data1/pipeline_dataset/audio'
 
 
+# In[2]:
+
+
 # Load your model  
 # e.g. model = load_model()...
 
@@ -32,6 +35,9 @@ cry_total_detections = 0
 cry_total_hit_in_cry = 0
 other_total_detections = 0
 cry_total_hit_in_other = 0
+
+
+# In[3]:
 
 
 # other: return 0, cry return 1
@@ -76,7 +82,6 @@ def getSegmentLabel(segment, index, meta):
             continue
         else:
             overlaps.append(segment)
-        
     seg_label_overlaps = []
     # get overlap ratio
     for label in overlaps:
@@ -93,10 +98,21 @@ def getSegmentLabel(segment, index, meta):
             
         seg_label_overlaps.append((over_end - over_start, label['class']))
         
+    #print(seg_label_overlaps)
     is_cry = 0
+    cry_durations = 0
+    mux_durations = 0
     for duration, audio_class in seg_label_overlaps:
-        if audio_class == 'cry' and duration > cry_limit_sec * sample_rate:
-            return 1
+        if audio_class == 'cry':
+            cry_durations += duration
+        if audio_class == 'cry_talk':
+            mux_durations += duration
+        
+    #print("cry durations {}".format(cry_durations/sample_rate))
+    if mux_durations > sample_rate:  # cry talk mix > 1 sec, skip this segment
+        return -1
+    if cry_durations > cry_limit_sec * sample_rate:
+        return 1
     return 0
     
 def test(audio_path, meta, segment_sec):
@@ -130,7 +146,10 @@ def test(audio_path, meta, segment_sec):
 
 
 # get validation split to test
-url = 'http://dev.yunyun.cloud:6001/metas/audio?split=val'
+# split = val -> get validation dataset
+# split = train -> get train dataset
+
+url = 'http://pipeline.iamcubo.com/metas/audio?split=val'
 resp = requests.get(url)
 metas = resp.json()['metas']
 print('total val count: {}'.format(len(metas)))
@@ -150,7 +169,7 @@ for meta in metas:
     audio_path = os.path.join(audio_folder, meta['name'])
     if not os.path.isfile(audio_path):
         # download file
-        url = os.path.join('http://dev.yunyun.cloud:6001/audio', meta['batch_date'], meta['name'])
+        url = os.path.join('http://pipeline.iamcubo.com/audio', meta['batch_date'], meta['name'])
         print('downloading .... {}'.format(url))
         r = requests.get(url) 
         with open(audio_path, 'wb') as f:
@@ -165,13 +184,6 @@ acc = accuracy_score(all_label_is_cry, all_detect_is_cry)
 print('\n -------- Report ----------')
 print("Correct rate: {}".format(acc))
 print(confusion_matrix(all_label_is_cry, all_detect_is_cry))
-# print fail case
-
-print(' -------- Error Detail -------')
-for meta in metas:
-    classes = []
-    if 'segments' not in meta:
-        print('{} no label segments'.format(meta['name']))
 
 
 # In[ ]:
